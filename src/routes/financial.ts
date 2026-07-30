@@ -1,0 +1,55 @@
+import { Router } from "express";
+import { eq } from "drizzle-orm";
+import { db } from "../db/client";
+import { financialEntries } from "../db/schema";
+
+export const financialRouter = Router();
+
+// Listar lançamentos de uma empresa
+financialRouter.get("/", async (req, res) => {
+  const companyId = Number(req.query.companyId);
+  const result = await db
+    .select()
+    .from(financialEntries)
+    .where(eq(financialEntries.companyId, companyId));
+  res.json(result);
+});
+
+// Buscar um lançamento específico
+financialRouter.get("/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const [result] = await db.select().from(financialEntries).where(eq(financialEntries.id, id));
+  if (!result) return res.status(404).json({ error: "Lançamento não encontrado" });
+  res.json(result);
+});
+
+// Criar lançamento
+financialRouter.post("/", async (req, res) => {
+  const { companyId, vehicleId, driverId, direction, category, description, amount, dueAt } = req.body;
+  const [created] = await db
+    .insert(financialEntries)
+    .values({ companyId, vehicleId, driverId, direction, category, description, amount, dueAt })
+    .returning();
+  res.status(201).json(created);
+});
+
+// Atualizar lançamento
+financialRouter.put("/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const { direction, category, description, amount, dueAt, paidAt, status } = req.body;
+  const [updated] = await db
+    .update(financialEntries)
+    .set({ direction, category, description, amount, dueAt, paidAt, status })
+    .where(eq(financialEntries.id, id))
+    .returning();
+  if (!updated) return res.status(404).json({ error: "Lançamento não encontrado" });
+  res.json(updated);
+});
+
+// Deletar lançamento
+financialRouter.delete("/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const [deleted] = await db.delete(financialEntries).where(eq(financialEntries.id, id)).returning();
+  if (!deleted) return res.status(404).json({ error: "Lançamento não encontrado" });
+  res.json({ ok: true });
+});

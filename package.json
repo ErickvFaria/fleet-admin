@@ -6,7 +6,8 @@
   "scripts": {
      "db:generate": "drizzle-kit generate",
   "db:migrate": "drizzle-kit migrate",
-  "dev": "tsx watch src/server.ts"
+  "dev": "tsx watch src/server.ts",
+  "db:seed": "tsx src/db/seed.ts"
   },
   "repository": {
     "type": "git",
