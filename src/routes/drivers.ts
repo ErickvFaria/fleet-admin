@@ -5,14 +5,12 @@ import { drivers } from "../db/schema";
 
 export const driversRouter = Router();
 
-// Listar motoristas de uma empresa
 driversRouter.get("/", async (req, res) => {
-  const companyId = Number(req.query.companyId);
+  const companyId = req.auth!.companyId;
   const result = await db.select().from(drivers).where(eq(drivers.companyId, companyId));
   res.json(result);
 });
 
-// Buscar um motorista específico
 driversRouter.get("/:id", async (req, res) => {
   const id = Number(req.params.id);
   const [result] = await db.select().from(drivers).where(eq(drivers.id, id));
@@ -20,9 +18,9 @@ driversRouter.get("/:id", async (req, res) => {
   res.json(result);
 });
 
-// Criar motorista
 driversRouter.post("/", async (req, res) => {
-  const { companyId, currentVehicleId, name, document, licenseNumber, licenseExpiresAt } = req.body;
+  const companyId = req.auth!.companyId;
+  const { currentVehicleId, name, document, licenseNumber, licenseExpiresAt } = req.body;
   const [created] = await db
     .insert(drivers)
     .values({ companyId, currentVehicleId, name, document, licenseNumber, licenseExpiresAt })
@@ -30,7 +28,6 @@ driversRouter.post("/", async (req, res) => {
   res.status(201).json(created);
 });
 
-// Atualizar motorista
 driversRouter.put("/:id", async (req, res) => {
   const id = Number(req.params.id);
   const { currentVehicleId, name, document, licenseNumber, licenseExpiresAt, status } = req.body;
@@ -43,7 +40,6 @@ driversRouter.put("/:id", async (req, res) => {
   res.json(updated);
 });
 
-// Deletar motorista
 driversRouter.delete("/:id", async (req, res) => {
   const id = Number(req.params.id);
   const [deleted] = await db.delete(drivers).where(eq(drivers.id, id)).returning();

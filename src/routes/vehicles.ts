@@ -5,9 +5,9 @@ import { vehicles } from "../db/schema";
 
 export const vehiclesRouter = Router();
 
-// Listar veículos de uma empresa
+// Listar veículos da empresa do usuário logado
 vehiclesRouter.get("/", async (req, res) => {
-  const companyId = Number(req.query.companyId);
+  const companyId = req.auth!.companyId;
   const result = await db.select().from(vehicles).where(eq(vehicles.companyId, companyId));
   res.json(result);
 });
@@ -22,7 +22,8 @@ vehiclesRouter.get("/:id", async (req, res) => {
 
 // Criar veículo
 vehiclesRouter.post("/", async (req, res) => {
-  const { companyId, plate, brand, model, year, currentKm } = req.body;
+  const companyId = req.auth!.companyId;
+  const { plate, brand, model, year, currentKm } = req.body;
   const [created] = await db
     .insert(vehicles)
     .values({ companyId, plate, brand, model, year, currentKm })

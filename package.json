@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-     "db:generate": "drizzle-kit generate",
-  "db:migrate": "drizzle-kit migrate",
-  "dev": "tsx watch src/server.ts",
-  "db:seed": "tsx src/db/seed.ts"
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "dev": "tsx watch src/server.ts",
+    "db:seed": "tsx src/db/seed.ts"
   },
   "repository": {
     "type": "git",
@@ -21,13 +21,17 @@
   },
   "homepage": "https://github.com/ErickvFaria/fleet-admin#readme",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
     "pg": "^8.22.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.1.2",
     "@types/pg": "^8.20.0",
     "drizzle-kit": "^0.31.10",

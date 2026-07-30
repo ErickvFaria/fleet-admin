@@ -5,9 +5,8 @@ import { financialEntries } from "../db/schema";
 
 export const financialRouter = Router();
 
-// Listar lançamentos de uma empresa
 financialRouter.get("/", async (req, res) => {
-  const companyId = Number(req.query.companyId);
+  const companyId = req.auth!.companyId;
   const result = await db
     .select()
     .from(financialEntries)
@@ -15,7 +14,6 @@ financialRouter.get("/", async (req, res) => {
   res.json(result);
 });
 
-// Buscar um lançamento específico
 financialRouter.get("/:id", async (req, res) => {
   const id = Number(req.params.id);
   const [result] = await db.select().from(financialEntries).where(eq(financialEntries.id, id));
@@ -23,9 +21,9 @@ financialRouter.get("/:id", async (req, res) => {
   res.json(result);
 });
 
-// Criar lançamento
 financialRouter.post("/", async (req, res) => {
-  const { companyId, vehicleId, driverId, direction, category, description, amount, dueAt } = req.body;
+  const companyId = req.auth!.companyId;
+  const { vehicleId, driverId, direction, category, description, amount, dueAt } = req.body;
   const [created] = await db
     .insert(financialEntries)
     .values({ companyId, vehicleId, driverId, direction, category, description, amount, dueAt })
@@ -33,7 +31,6 @@ financialRouter.post("/", async (req, res) => {
   res.status(201).json(created);
 });
 
-// Atualizar lançamento
 financialRouter.put("/:id", async (req, res) => {
   const id = Number(req.params.id);
   const { direction, category, description, amount, dueAt, paidAt, status } = req.body;
@@ -46,7 +43,6 @@ financialRouter.put("/:id", async (req, res) => {
   res.json(updated);
 });
 
-// Deletar lançamento
 financialRouter.delete("/:id", async (req, res) => {
   const id = Number(req.params.id);
   const [deleted] = await db.delete(financialEntries).where(eq(financialEntries.id, id)).returning();
