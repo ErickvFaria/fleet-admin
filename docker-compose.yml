@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: fleet_admin
+      POSTGRES_PASSWORD: fleet_admin_dev
+      POSTGRES_DB: fleet_admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - fleet_admin_data:/var/lib/postgresql/data
+
+volumes:
+  fleet_admin_data:
