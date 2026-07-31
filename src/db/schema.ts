@@ -54,3 +54,15 @@ export const financialEntries = pgTable("financial_entries", {
   status: varchar("status", { length: 20 }).default("pending").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const contracts = pgTable("contracts", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  driverId: integer("driver_id").notNull().references(() => drivers.id),
+  vehicleId: integer("vehicle_id").notNull().references(() => vehicles.id),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date"),
+  weeklyRate: decimal("weekly_rate", { precision: 10, scale: 2 }).notNull(),
+  status: varchar("status", { length: 20 }).default("active").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});

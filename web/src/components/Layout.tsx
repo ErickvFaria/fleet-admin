@@ -17,6 +17,7 @@ export function Layout() {
         <Link to="/vehicles">Veículos</Link>
         <Link to="/drivers">Motoristas</Link>
         <Link to="/financial">Financeiro</Link>
+        <Link to="/contracts">Contratos</Link>
         <span style={{ marginLeft: "auto" }}>{user?.name}</span>
         <button onClick={handleLogout}>Sair</button>
       </nav>

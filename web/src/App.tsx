@@ -6,6 +6,7 @@ import { Drivers } from "./pages/Drivers";
 import { Financial } from "./pages/Financial";
 import { ProtectedRoute } from "./pages/ProtectedRoute";
 import { Layout } from "./components/Layout";
+import { Contracts } from "./pages/Contracts";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/vehicles" element={<Vehicles />} />
           <Route path="/drivers" element={<Drivers />} />
           <Route path="/financial" element={<Financial />} />
+          <Route path="/contracts" element={<Contracts />} />
         </Route>
       </Route>
     </Routes>

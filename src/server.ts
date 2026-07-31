@@ -8,6 +8,7 @@ import { driversRouter } from "./routes/drivers";
 import { financialRouter } from "./routes/financial";
 import { authRouter } from "./routes/auth";
 import { requireAuth } from "./middlewares/auth";
+import { contractsRouter } from "./routes/contracts";
 
 const app = express();
 app.use(cors({ origin: "http://localhost:5173" }));
@@ -25,6 +26,7 @@ app.get("/companies", async (_req, res) => {
 app.use("/vehicles", requireAuth, vehiclesRouter);
 app.use("/drivers", requireAuth, driversRouter);
 app.use("/financial-entries", requireAuth, financialRouter);
+app.use("/contracts", requireAuth, contractsRouter);
 app.use("/auth", authRouter);
 
 const port = process.env.PORT || 3333;
