@@ -11,6 +11,18 @@ interface Vehicle {
   status: string;
 }
 
+const statusLabels: Record<string, string> = {
+  available: "Disponível",
+  rented: "Alugado",
+  maintenance: "Manutenção",
+};
+
+const statusColors: Record<string, string> = {
+  available: "bg-green-100 text-green-700",
+  rented: "bg-blue-100 text-blue-700",
+  maintenance: "bg-yellow-100 text-yellow-700",
+};
+
 export function Vehicles() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [plate, setPlate] = useState("");
@@ -21,6 +33,7 @@ export function Vehicles() {
   const [status, setStatus] = useState("available");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
@@ -59,21 +72,10 @@ export function Vehicles() {
 
     if (editingId) {
       await api.put(`/vehicles/${editingId}`, {
-        plate,
-        brand,
-        model,
-        year: Number(year),
-        currentKm: Number(currentKm),
-        status,
+        plate, brand, model, year: Number(year), currentKm: Number(currentKm), status,
       });
     } else {
-      await api.post("/vehicles", {
-        plate,
-        brand,
-        model,
-        year: Number(year),
-        currentKm: 0,
-      });
+      await api.post("/vehicles", { plate, brand, model, year: Number(year), currentKm: 0 });
     }
 
     resetForm();
@@ -87,81 +89,96 @@ export function Vehicles() {
   }
 
   const filteredVehicles = vehicles.filter((v) => {
-  const matchesSearch =
-    v.plate.toLowerCase().includes(search.toLowerCase()) ||
-    v.model.toLowerCase().includes(search.toLowerCase());
-  const matchesStatus = statusFilter ? v.status === statusFilter : true;
-  return matchesSearch && matchesStatus;
-});
+    const matchesSearch =
+      v.plate.toLowerCase().includes(search.toLowerCase()) ||
+      v.model.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter ? v.status === statusFilter : true;
+    return matchesSearch && matchesStatus;
+  });
 
-  if (loading) return <p>Carregando...</p>;
+  const inputClass = "px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900";
+
+  if (loading) return <p className="text-gray-500">Carregando...</p>;
 
   return (
     <div>
-      <h1>Veículos</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Veículos</h1>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
-        <input placeholder="Placa" value={plate} onChange={(e) => setPlate(e.target.value)} required />
-        <input placeholder="Marca" value={brand} onChange={(e) => setBrand(e.target.value)} />
-        <input placeholder="Modelo" value={model} onChange={(e) => setModel(e.target.value)} required />
-        <input placeholder="Ano" type="number" value={year} onChange={(e) => setYear(e.target.value)} required />
+      <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-lg p-4 mb-6 flex gap-3 flex-wrap items-center shadow-sm">
+        <input className={inputClass} placeholder="Placa" value={plate} onChange={(e) => setPlate(e.target.value)} required />
+        <input className={inputClass} placeholder="Marca" value={brand} onChange={(e) => setBrand(e.target.value)} />
+        <input className={inputClass} placeholder="Modelo" value={model} onChange={(e) => setModel(e.target.value)} required />
+        <input className={inputClass + " w-24"} placeholder="Ano" type="number" value={year} onChange={(e) => setYear(e.target.value)} required />
         {editingId && (
           <>
-            <input placeholder="KM" type="number" value={currentKm} onChange={(e) => setCurrentKm(e.target.value)} />
-            <select value={status} onChange={(e) => setStatus(e.target.value)}>
+            <input className={inputClass + " w-28"} placeholder="KM" type="number" value={currentKm} onChange={(e) => setCurrentKm(e.target.value)} />
+            <select className={inputClass} value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="available">Disponível</option>
               <option value="rented">Alugado</option>
               <option value="maintenance">Manutenção</option>
             </select>
           </>
         )}
-        <button type="submit">{editingId ? "Salvar" : "Adicionar"}</button>
-        {editingId && <button type="button" onClick={resetForm}>Cancelar</button>}
+        <button type="submit" className="bg-gray-900 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-800 transition-colors">
+          {editingId ? "Salvar" : "Adicionar"}
+        </button>
+        {editingId && (
+          <button type="button" onClick={resetForm} className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors">
+            Cancelar
+          </button>
+        )}
       </form>
-      
-<div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-  <input
-    placeholder="Buscar por placa ou modelo..."
-    value={search}
-    onChange={(e) => setSearch(e.target.value)}
-  />
-  <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-    <option value="">Todos os status</option>
-    <option value="available">Disponível</option>
-    <option value="rented">Alugado</option>
-    <option value="maintenance">Manutenção</option>
-  </select>
-</div>
 
-      <table border={1} cellPadding={8} style={{ borderCollapse: "collapse", width: "100%" }}>
-        <thead>
-          <tr>
-            <th>Placa</th>
-            <th>Marca</th>
-            <th>Modelo</th>
-            <th>Ano</th>
-            <th>KM</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredVehicles.map((v) => (
-            <tr key={v.id}>
-              <td>{v.plate}</td>
-              <td>{v.brand}</td>
-              <td>{v.model}</td>
-              <td>{v.year}</td>
-              <td>{v.currentKm}</td>
-              <td>{v.status}</td>
-              <td style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => startEdit(v)}>Editar</button>
-                <button onClick={() => handleDelete(v.id)}>Excluir</button>
-              </td>
+      <div className="flex gap-3 mb-4">
+        <input
+          className={inputClass + " flex-1"}
+          placeholder="Buscar por placa ou modelo..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select className={inputClass} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="">Todos os status</option>
+          <option value="available">Disponível</option>
+          <option value="rented">Alugado</option>
+          <option value="maintenance">Manutenção</option>
+        </select>
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr className="text-left text-gray-500">
+              <th className="px-4 py-3 font-medium">Placa</th>
+              <th className="px-4 py-3 font-medium">Marca</th>
+              <th className="px-4 py-3 font-medium">Modelo</th>
+              <th className="px-4 py-3 font-medium">Ano</th>
+              <th className="px-4 py-3 font-medium">KM</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3"></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {filteredVehicles.map((v) => (
+              <tr key={v.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3 font-medium text-gray-900">{v.plate}</td>
+                <td className="px-4 py-3 text-gray-600">{v.brand}</td>
+                <td className="px-4 py-3 text-gray-600">{v.model}</td>
+                <td className="px-4 py-3 text-gray-600">{v.year}</td>
+                <td className="px-4 py-3 text-gray-600">{v.currentKm.toLocaleString("pt-BR")}</td>
+                <td className="px-4 py-3">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[v.status]}`}>
+                    {statusLabels[v.status] ?? v.status}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-right space-x-2">
+                  <button onClick={() => startEdit(v)} className="text-gray-600 hover:text-gray-900 font-medium">Editar</button>
+                  <button onClick={() => handleDelete(v.id)} className="text-red-600 hover:text-red-800 font-medium">Excluir</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
