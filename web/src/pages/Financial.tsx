@@ -41,6 +41,9 @@ export function Financial() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
   async function loadData() {
     const [entriesRes, vehiclesRes, driversRes] = await Promise.all([
       api.get("/financial-entries"),
@@ -118,6 +121,12 @@ export function Financial() {
     loadData();
   }
 
+  const filteredEntries = entries.filter((entry) => {
+    const matchesSearch = entry.description.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter ? entry.status === statusFilter : true;
+    return matchesSearch && matchesStatus;
+  });
+
   if (loading) return <p>Carregando...</p>;
 
   return (
@@ -168,6 +177,20 @@ export function Financial() {
         {editingId && <button type="button" onClick={resetForm}>Cancelar</button>}
       </form>
 
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <input
+          placeholder="Buscar por descrição..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="">Todos os status</option>
+          <option value="pending">Pendente</option>
+          <option value="paid">Pago</option>
+          <option value="overdue">Atrasado</option>
+        </select>
+      </div>
+
       <table border={1} cellPadding={8} style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
           <tr>
@@ -181,7 +204,7 @@ export function Financial() {
           </tr>
         </thead>
         <tbody>
-          {entries.map((entry) => (
+          {filteredEntries.map((entry) => (
             <tr key={entry.id}>
               <td>{entry.direction === "in" ? "Entrada" : "Saída"}</td>
               <td>{entry.category}</td>

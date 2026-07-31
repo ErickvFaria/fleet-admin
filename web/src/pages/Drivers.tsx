@@ -27,6 +27,9 @@ export function Drivers() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
   async function loadData() {
     const [driversRes, vehiclesRes] = await Promise.all([
       api.get("/drivers"),
@@ -91,6 +94,14 @@ export function Drivers() {
     return v ? `${v.plate} (${v.model})` : "-";
   }
 
+  const filteredDrivers = drivers.filter((d) => {
+    const matchesSearch =
+      d.name.toLowerCase().includes(search.toLowerCase()) ||
+      d.document.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter ? d.status === statusFilter : true;
+    return matchesSearch && matchesStatus;
+  });
+
   if (loading) return <p>Carregando...</p>;
 
   return (
@@ -119,6 +130,19 @@ export function Drivers() {
         {editingId && <button type="button" onClick={resetForm}>Cancelar</button>}
       </form>
 
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <input
+          placeholder="Buscar por nome ou CPF..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="">Todos os status</option>
+          <option value="active">Ativo</option>
+          <option value="inactive">Inativo</option>
+        </select>
+      </div>
+
       <table border={1} cellPadding={8} style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
           <tr>
@@ -131,7 +155,7 @@ export function Drivers() {
           </tr>
         </thead>
         <tbody>
-          {drivers.map((d) => (
+          {filteredDrivers.map((d) => (
             <tr key={d.id}>
               <td>{d.name}</td>
               <td>{d.document}</td>

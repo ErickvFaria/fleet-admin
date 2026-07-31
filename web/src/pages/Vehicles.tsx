@@ -21,6 +21,8 @@ export function Vehicles() {
   const [status, setStatus] = useState("available");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   async function loadVehicles() {
     const response = await api.get("/vehicles");
@@ -84,6 +86,14 @@ export function Vehicles() {
     loadVehicles();
   }
 
+  const filteredVehicles = vehicles.filter((v) => {
+  const matchesSearch =
+    v.plate.toLowerCase().includes(search.toLowerCase()) ||
+    v.model.toLowerCase().includes(search.toLowerCase());
+  const matchesStatus = statusFilter ? v.status === statusFilter : true;
+  return matchesSearch && matchesStatus;
+});
+
   if (loading) return <p>Carregando...</p>;
 
   return (
@@ -108,6 +118,20 @@ export function Vehicles() {
         <button type="submit">{editingId ? "Salvar" : "Adicionar"}</button>
         {editingId && <button type="button" onClick={resetForm}>Cancelar</button>}
       </form>
+      
+<div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+  <input
+    placeholder="Buscar por placa ou modelo..."
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+  />
+  <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+    <option value="">Todos os status</option>
+    <option value="available">Disponível</option>
+    <option value="rented">Alugado</option>
+    <option value="maintenance">Manutenção</option>
+  </select>
+</div>
 
       <table border={1} cellPadding={8} style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
@@ -122,7 +146,7 @@ export function Vehicles() {
           </tr>
         </thead>
         <tbody>
-          {vehicles.map((v) => (
+          {filteredVehicles.map((v) => (
             <tr key={v.id}>
               <td>{v.plate}</td>
               <td>{v.brand}</td>
