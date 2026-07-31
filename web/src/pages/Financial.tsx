@@ -8,6 +8,7 @@ interface FinancialEntry {
   description: string;
   amount: string;
   dueAt: string;
+  paidAt: string | null;
   status: string;
   vehicleId: number | null;
   driverId: number | null;
@@ -33,8 +34,11 @@ export function Financial() {
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [dueAt, setDueAt] = useState("");
+  const [paidAt, setPaidAt] = useState("");
+  const [status, setStatus] = useState("pending");
   const [vehicleId, setVehicleId] = useState("");
   const [driverId, setDriverId] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   async function loadData() {
@@ -53,27 +57,64 @@ export function Financial() {
     loadData();
   }, []);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    await api.post("/financial-entries", {
-      direction,
-      category,
-      description,
-      amount,
-      dueAt,
-      vehicleId: vehicleId ? Number(vehicleId) : null,
-      driverId: driverId ? Number(driverId) : null,
-    });
+  function resetForm() {
+    setDirection("in");
+    setCategory("aluguel");
     setDescription("");
     setAmount("");
     setDueAt("");
+    setPaidAt("");
+    setStatus("pending");
     setVehicleId("");
     setDriverId("");
+    setEditingId(null);
+  }
+
+  function startEdit(entry: FinancialEntry) {
+    setEditingId(entry.id);
+    setDirection(entry.direction);
+    setCategory(entry.category);
+    setDescription(entry.description);
+    setAmount(entry.amount);
+    setDueAt(entry.dueAt);
+    setPaidAt(entry.paidAt ?? "");
+    setStatus(entry.status);
+    setVehicleId(entry.vehicleId ? String(entry.vehicleId) : "");
+    setDriverId(entry.driverId ? String(entry.driverId) : "");
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+
+    if (editingId) {
+      await api.put(`/financial-entries/${editingId}`, {
+        direction,
+        category,
+        description,
+        amount,
+        dueAt,
+        paidAt: paidAt || null,
+        status,
+      });
+    } else {
+      await api.post("/financial-entries", {
+        direction,
+        category,
+        description,
+        amount,
+        dueAt,
+        vehicleId: vehicleId ? Number(vehicleId) : null,
+        driverId: driverId ? Number(driverId) : null,
+      });
+    }
+
+    resetForm();
     loadData();
   }
 
   async function handleDelete(id: number) {
     await api.delete(`/financial-entries/${id}`);
+    if (editingId === id) resetForm();
     loadData();
   }
 
@@ -97,19 +138,34 @@ export function Financial() {
         <input placeholder="Descrição" value={description} onChange={(e) => setDescription(e.target.value)} required />
         <input placeholder="Valor" type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required />
         <input type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} required />
-        <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
-          <option value="">Sem veículo</option>
-          {vehicles.map((v) => (
-            <option key={v.id} value={v.id}>{v.plate}</option>
-          ))}
-        </select>
-        <select value={driverId} onChange={(e) => setDriverId(e.target.value)}>
-          <option value="">Sem motorista</option>
-          {drivers.map((d) => (
-            <option key={d.id} value={d.id}>{d.name}</option>
-          ))}
-        </select>
-        <button type="submit">Adicionar</button>
+        {!editingId && (
+          <>
+            <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
+              <option value="">Sem veículo</option>
+              {vehicles.map((v) => (
+                <option key={v.id} value={v.id}>{v.plate}</option>
+              ))}
+            </select>
+            <select value={driverId} onChange={(e) => setDriverId(e.target.value)}>
+              <option value="">Sem motorista</option>
+              {drivers.map((d) => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+          </>
+        )}
+        {editingId && (
+          <>
+            <select value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="pending">Pendente</option>
+              <option value="paid">Pago</option>
+              <option value="overdue">Atrasado</option>
+            </select>
+            <input type="date" placeholder="Data pagamento" value={paidAt} onChange={(e) => setPaidAt(e.target.value)} />
+          </>
+        )}
+        <button type="submit">{editingId ? "Salvar" : "Adicionar"}</button>
+        {editingId && <button type="button" onClick={resetForm}>Cancelar</button>}
       </form>
 
       <table border={1} cellPadding={8} style={{ borderCollapse: "collapse", width: "100%" }}>
@@ -133,7 +189,8 @@ export function Financial() {
               <td>R$ {entry.amount}</td>
               <td>{entry.dueAt}</td>
               <td>{entry.status}</td>
-              <td>
+              <td style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => startEdit(entry)}>Editar</button>
                 <button onClick={() => handleDelete(entry.id)}>Excluir</button>
               </td>
             </tr>

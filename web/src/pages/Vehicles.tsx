@@ -17,6 +17,9 @@ export function Vehicles() {
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
   const [year, setYear] = useState("");
+  const [currentKm, setCurrentKm] = useState("");
+  const [status, setStatus] = useState("available");
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   async function loadVehicles() {
@@ -29,24 +32,55 @@ export function Vehicles() {
     loadVehicles();
   }, []);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    await api.post("/vehicles", {
-      plate,
-      brand,
-      model,
-      year: Number(year),
-      currentKm: 0,
-    });
+  function resetForm() {
     setPlate("");
     setBrand("");
     setModel("");
     setYear("");
+    setCurrentKm("");
+    setStatus("available");
+    setEditingId(null);
+  }
+
+  function startEdit(vehicle: Vehicle) {
+    setEditingId(vehicle.id);
+    setPlate(vehicle.plate);
+    setBrand(vehicle.brand ?? "");
+    setModel(vehicle.model);
+    setYear(String(vehicle.year));
+    setCurrentKm(String(vehicle.currentKm));
+    setStatus(vehicle.status);
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+
+    if (editingId) {
+      await api.put(`/vehicles/${editingId}`, {
+        plate,
+        brand,
+        model,
+        year: Number(year),
+        currentKm: Number(currentKm),
+        status,
+      });
+    } else {
+      await api.post("/vehicles", {
+        plate,
+        brand,
+        model,
+        year: Number(year),
+        currentKm: 0,
+      });
+    }
+
+    resetForm();
     loadVehicles();
   }
 
   async function handleDelete(id: number) {
     await api.delete(`/vehicles/${id}`);
+    if (editingId === id) resetForm();
     loadVehicles();
   }
 
@@ -56,12 +90,23 @@ export function Vehicles() {
     <div>
       <h1>Veículos</h1>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+      <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
         <input placeholder="Placa" value={plate} onChange={(e) => setPlate(e.target.value)} required />
         <input placeholder="Marca" value={brand} onChange={(e) => setBrand(e.target.value)} />
         <input placeholder="Modelo" value={model} onChange={(e) => setModel(e.target.value)} required />
         <input placeholder="Ano" type="number" value={year} onChange={(e) => setYear(e.target.value)} required />
-        <button type="submit">Adicionar</button>
+        {editingId && (
+          <>
+            <input placeholder="KM" type="number" value={currentKm} onChange={(e) => setCurrentKm(e.target.value)} />
+            <select value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="available">Disponível</option>
+              <option value="rented">Alugado</option>
+              <option value="maintenance">Manutenção</option>
+            </select>
+          </>
+        )}
+        <button type="submit">{editingId ? "Salvar" : "Adicionar"}</button>
+        {editingId && <button type="button" onClick={resetForm}>Cancelar</button>}
       </form>
 
       <table border={1} cellPadding={8} style={{ borderCollapse: "collapse", width: "100%" }}>
@@ -85,7 +130,8 @@ export function Vehicles() {
               <td>{v.year}</td>
               <td>{v.currentKm}</td>
               <td>{v.status}</td>
-              <td>
+              <td style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => startEdit(v)}>Editar</button>
                 <button onClick={() => handleDelete(v.id)}>Excluir</button>
               </td>
             </tr>

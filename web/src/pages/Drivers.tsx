@@ -23,6 +23,8 @@ export function Drivers() {
   const [document, setDocument] = useState("");
   const [licenseNumber, setLicenseNumber] = useState("");
   const [currentVehicleId, setCurrentVehicleId] = useState("");
+  const [status, setStatus] = useState("active");
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   async function loadData() {
@@ -39,23 +41,47 @@ export function Drivers() {
     loadData();
   }, []);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    await api.post("/drivers", {
-      name,
-      document,
-      licenseNumber,
-      currentVehicleId: currentVehicleId ? Number(currentVehicleId) : null,
-    });
+  function resetForm() {
     setName("");
     setDocument("");
     setLicenseNumber("");
     setCurrentVehicleId("");
+    setStatus("active");
+    setEditingId(null);
+  }
+
+  function startEdit(driver: Driver) {
+    setEditingId(driver.id);
+    setName(driver.name);
+    setDocument(driver.document);
+    setLicenseNumber(driver.licenseNumber ?? "");
+    setCurrentVehicleId(driver.currentVehicleId ? String(driver.currentVehicleId) : "");
+    setStatus(driver.status);
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+
+    const payload = {
+      name,
+      document,
+      licenseNumber,
+      currentVehicleId: currentVehicleId ? Number(currentVehicleId) : null,
+    };
+
+    if (editingId) {
+      await api.put(`/drivers/${editingId}`, { ...payload, status });
+    } else {
+      await api.post("/drivers", payload);
+    }
+
+    resetForm();
     loadData();
   }
 
   async function handleDelete(id: number) {
     await api.delete(`/drivers/${id}`);
+    if (editingId === id) resetForm();
     loadData();
   }
 
@@ -71,7 +97,7 @@ export function Drivers() {
     <div>
       <h1>Motoristas</h1>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+      <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
         <input placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} required />
         <input placeholder="CPF" value={document} onChange={(e) => setDocument(e.target.value)} required />
         <input placeholder="CNH" value={licenseNumber} onChange={(e) => setLicenseNumber(e.target.value)} />
@@ -83,7 +109,14 @@ export function Drivers() {
             </option>
           ))}
         </select>
-        <button type="submit">Adicionar</button>
+        {editingId && (
+          <select value={status} onChange={(e) => setStatus(e.target.value)}>
+            <option value="active">Ativo</option>
+            <option value="inactive">Inativo</option>
+          </select>
+        )}
+        <button type="submit">{editingId ? "Salvar" : "Adicionar"}</button>
+        {editingId && <button type="button" onClick={resetForm}>Cancelar</button>}
       </form>
 
       <table border={1} cellPadding={8} style={{ borderCollapse: "collapse", width: "100%" }}>
@@ -105,7 +138,8 @@ export function Drivers() {
               <td>{d.licenseNumber}</td>
               <td>{vehicleLabel(d.currentVehicleId)}</td>
               <td>{d.status}</td>
-              <td>
+              <td style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => startEdit(d)}>Editar</button>
                 <button onClick={() => handleDelete(d.id)}>Excluir</button>
               </td>
             </tr>
