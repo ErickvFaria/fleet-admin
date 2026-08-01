@@ -4,9 +4,10 @@ import { Dashboard } from "./pages/Dashboard";
 import { Vehicles } from "./pages/Vehicles";
 import { Drivers } from "./pages/Drivers";
 import { Financial } from "./pages/Financial";
+import { Contracts } from "./pages/Contracts";
+import { Financings } from "./pages/Financings";
 import { ProtectedRoute } from "./pages/ProtectedRoute";
 import { Layout } from "./components/Layout";
-import { Contracts } from "./pages/Contracts";
 
 function App() {
   return (
@@ -18,8 +19,9 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/vehicles" element={<Vehicles />} />
           <Route path="/drivers" element={<Drivers />} />
-          <Route path="/financial" element={<Financial />} />
           <Route path="/contracts" element={<Contracts />} />
+          <Route path="/financial" element={<Financial />} />
+          <Route path="/financings" element={<Financings />} />
         </Route>
       </Route>
     </Routes>

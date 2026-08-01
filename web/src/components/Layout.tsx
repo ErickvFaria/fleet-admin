@@ -7,6 +7,7 @@ const navItems = [
   { to: "/drivers", label: "Motoristas" },
   { to: "/contracts", label: "Contratos" },
   { to: "/financial", label: "Financeiro" },
+  { to: "/financings", label: "Financiamentos" },
 ];
 
 export function Layout() {

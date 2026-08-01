@@ -25,14 +25,16 @@ financingsRouter.post("/", async (req, res) => {
   res.status(201).json(created);
 });
 
-// Marcar parcela como paga
+// Marcar parcela como paga (valor customizável, útil pra amortização com desconto de juros)
 financingsRouter.put("/:id/pay-installment", async (req, res) => {
   const id = Number(req.params.id);
   const companyId = req.auth!.companyId;
+  const { amount } = req.body;
 
   const [financing] = await db.select().from(vehicleFinancings).where(eq(vehicleFinancings.id, id));
   if (!financing) return res.status(404).json({ error: "Financiamento não encontrado" });
 
+  const paidAmount = amount ? String(amount) : financing.installmentValue;
   const newPaidCount = financing.paidInstallments + 1;
   const newStatus = newPaidCount >= financing.totalInstallments ? "finished" : "active";
 
@@ -42,7 +44,6 @@ financingsRouter.put("/:id/pay-installment", async (req, res) => {
     .where(eq(vehicleFinancings.id, id))
     .returning();
 
-  // Cria o lançamento financeiro automaticamente
   const today = new Date().toISOString().slice(0, 10);
   await db.insert(financialEntries).values({
     companyId,
@@ -50,7 +51,7 @@ financingsRouter.put("/:id/pay-installment", async (req, res) => {
     direction: "out",
     category: "financiamento",
     description: `Parcela ${newPaidCount}/${financing.totalInstallments} - Financiamento`,
-    amount: financing.installmentValue,
+    amount: paidAmount,
     dueAt: today,
     paidAt: today,
     status: "paid",
