@@ -1,4 +1,5 @@
 import { useEffect, useState, FormEvent } from "react";
+import { Plus, Pencil, Trash2, Search, X } from "lucide-react";
 import { api } from "../api/client";
 
 interface FinancialEntry {
@@ -31,8 +32,8 @@ const statusLabels: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700",
-  paid: "bg-green-100 text-green-700",
+  pending: "bg-amber-100 text-amber-700",
+  paid: "bg-emerald-100 text-emerald-700",
   overdue: "bg-red-100 text-red-700",
 };
 
@@ -40,6 +41,8 @@ const categoryLabels: Record<string, string> = {
   aluguel: "Aluguel",
   manutencao: "Manutenção",
   combustivel: "Combustível",
+  financiamento: "Financiamento",
+  seguro: "Seguro",
   outro: "Outro",
 };
 
@@ -136,15 +139,15 @@ export function Financial() {
     return matchesSearch && matchesStatus;
   });
 
-  const inputClass = "px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900";
+  const inputClass = "px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent";
 
-  if (loading) return <p className="text-gray-500">Carregando...</p>;
+  if (loading) return <p className="text-slate-500">Carregando...</p>;
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Financeiro</h1>
+      <h1 className="text-2xl font-bold text-slate-900 mb-6">Financeiro</h1>
 
-      <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-lg p-4 mb-6 flex gap-3 flex-wrap items-center shadow-sm">
+      <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-xl p-4 mb-6 flex gap-3 flex-wrap items-center shadow-sm shadow-slate-200/50">
         <select className={inputClass} value={direction} onChange={(e) => setDirection(e.target.value)}>
           <option value="in">Entrada</option>
           <option value="out">Saída</option>
@@ -184,23 +187,28 @@ export function Financial() {
             <input className={inputClass} type="date" placeholder="Data pagamento" value={paidAt} onChange={(e) => setPaidAt(e.target.value)} />
           </>
         )}
-        <button type="submit" className="bg-gray-900 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-800 transition-colors">
+        <button type="submit" className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200">
+          {editingId ? <Pencil size={16} /> : <Plus size={16} />}
           {editingId ? "Salvar" : "Adicionar"}
         </button>
         {editingId && (
-          <button type="button" onClick={resetForm} className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors">
+          <button type="button" onClick={resetForm} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
+            <X size={16} />
             Cancelar
           </button>
         )}
       </form>
 
       <div className="flex gap-3 mb-4">
-        <input
-          className={inputClass + " flex-1"}
-          placeholder="Buscar por descrição..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            className={inputClass + " w-full pl-9"}
+            placeholder="Buscar por descrição..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
         <select className={inputClass} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">Todos os status</option>
           <option value="pending">Pendente</option>
@@ -209,10 +217,10 @@ export function Financial() {
         </select>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm shadow-slate-200/50">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr className="text-left text-gray-500">
+          <thead className="bg-slate-50 border-b border-slate-200">
+            <tr className="text-left text-slate-500">
               <th className="px-4 py-3 font-medium">Tipo</th>
               <th className="px-4 py-3 font-medium">Categoria</th>
               <th className="px-4 py-3 font-medium">Descrição</th>
@@ -222,26 +230,32 @@ export function Financial() {
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-slate-100">
             {filteredEntries.map((entry) => (
-              <tr key={entry.id} className="hover:bg-gray-50">
+              <tr key={entry.id} className="hover:bg-slate-50 transition-colors">
                 <td className="px-4 py-3">
-                  <span className={entry.direction === "in" ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                  <span className={entry.direction === "in" ? "text-emerald-600 font-medium" : "text-red-600 font-medium"}>
                     {entry.direction === "in" ? "Entrada" : "Saída"}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-600">{categoryLabels[entry.category] ?? entry.category}</td>
-                <td className="px-4 py-3 text-gray-600">{entry.description}</td>
-                <td className="px-4 py-3 text-gray-900 font-medium">R$ {entry.amount}</td>
-                <td className="px-4 py-3 text-gray-600">{entry.dueAt}</td>
+                <td className="px-4 py-3 text-slate-600">{categoryLabels[entry.category] ?? entry.category}</td>
+                <td className="px-4 py-3 text-slate-600">{entry.description}</td>
+                <td className="px-4 py-3 text-slate-900 font-medium">R$ {entry.amount}</td>
+                <td className="px-4 py-3 text-slate-600">{entry.dueAt}</td>
                 <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[entry.status]}`}>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[entry.status]}`}>
                     {statusLabels[entry.status] ?? entry.status}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-right space-x-2">
-                  <button onClick={() => startEdit(entry)} className="text-gray-600 hover:text-gray-900 font-medium">Editar</button>
-                  <button onClick={() => handleDelete(entry.id)} className="text-red-600 hover:text-red-800 font-medium">Excluir</button>
+                <td className="px-4 py-3">
+                  <div className="flex items-center justify-end gap-3">
+                    <button onClick={() => startEdit(entry)} className="text-slate-400 hover:text-indigo-600 transition-colors" title="Editar">
+                      <Pencil size={16} />
+                    </button>
+                    <button onClick={() => handleDelete(entry.id)} className="text-slate-400 hover:text-red-600 transition-colors" title="Excluir">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
