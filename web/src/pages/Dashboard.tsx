@@ -61,7 +61,8 @@ export function Dashboard() {
     .filter((e) => e.status === "pending")
     .reduce((sum, e) => sum + Number(e.amount), 0);
 
-  // Agrupa entradas/saídas por mês, com base na data de vencimento
+  const cashBalance = totalIn - totalOut;
+
   const monthlyMap = new Map<string, { in: number; out: number }>();
   for (const entry of entries) {
     const date = new Date(entry.dueAt);
@@ -104,8 +105,11 @@ export function Dashboard() {
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
-          <p className="text-sm font-medium text-gray-500 mb-3">Financeiro</p>
-          <div className="space-y-1 text-sm">
+          <p className="text-sm font-medium text-gray-500 mb-1">Saldo em caixa</p>
+          <p className={`text-3xl font-bold mb-3 ${cashBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
+            R$ {cashBalance.toFixed(2)}
+          </p>
+          <div className="space-y-1 text-sm border-t border-gray-100 pt-3">
             <div className="flex justify-between">
               <span className="text-gray-500">Recebido</span>
               <span className="font-medium text-green-600">R$ {totalIn.toFixed(2)}</span>
