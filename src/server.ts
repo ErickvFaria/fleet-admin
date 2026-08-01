@@ -7,8 +7,10 @@ import { vehiclesRouter } from "./routes/vehicles";
 import { driversRouter } from "./routes/drivers";
 import { financialRouter } from "./routes/financial";
 import { authRouter } from "./routes/auth";
-import { requireAuth } from "./middlewares/auth";
 import { contractsRouter } from "./routes/contracts";
+import { financingsRouter } from "./routes/financings";
+import { insurancesRouter } from "./routes/insurances";
+import { requireAuth } from "./middlewares/auth";
 
 const app = express();
 app.use(cors({ origin: "http://localhost:5173" }));
@@ -27,6 +29,8 @@ app.use("/vehicles", requireAuth, vehiclesRouter);
 app.use("/drivers", requireAuth, driversRouter);
 app.use("/financial-entries", requireAuth, financialRouter);
 app.use("/contracts", requireAuth, contractsRouter);
+app.use("/financings", requireAuth, financingsRouter);
+app.use("/insurances", requireAuth, insurancesRouter);
 app.use("/auth", authRouter);
 
 const port = process.env.PORT || 3333;

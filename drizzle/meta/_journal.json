@@ -15,6 +15,13 @@
       "when": 1785475505163,
       "tag": "0001_dear_silver_sable",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785551548903,
+      "tag": "0002_wonderful_blink",
+      "breakpoints": true
     }
   ]
 }

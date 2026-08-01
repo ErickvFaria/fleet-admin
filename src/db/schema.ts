@@ -66,3 +66,26 @@ export const contracts = pgTable("contracts", {
   status: varchar("status", { length: 20 }).default("active").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const vehicleFinancings = pgTable("vehicle_financings", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  vehicleId: integer("vehicle_id").notNull().references(() => vehicles.id),
+  installmentValue: decimal("installment_value", { precision: 10, scale: 2 }).notNull(),
+  dueDay: integer("due_day").notNull(),
+  totalInstallments: integer("total_installments").notNull(),
+  paidInstallments: integer("paid_installments").default(0).notNull(),
+  status: varchar("status", { length: 20 }).default("active").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const vehicleInsurances = pgTable("vehicle_insurances", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  vehicleId: integer("vehicle_id").notNull().references(() => vehicles.id),
+  monthlyValue: decimal("monthly_value", { precision: 10, scale: 2 }).notNull(),
+  dueDay: integer("due_day").notNull(),
+  lastPaidAt: date("last_paid_at"),
+  status: varchar("status", { length: 20 }).default("active").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
