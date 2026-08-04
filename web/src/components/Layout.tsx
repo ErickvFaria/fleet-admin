@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Car, Users, FileText, Wallet, Landmark, LogOut } from "lucide-react";
+import { LayoutDashboard, Car, Users, FileText, Wallet, Landmark, ClipboardCheck, LogOut } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 const navItems = [
@@ -9,6 +9,7 @@ const navItems = [
   { to: "/contracts", label: "Contratos", icon: FileText },
   { to: "/financial", label: "Financeiro", icon: Wallet },
   { to: "/financings", label: "Financiamentos", icon: Landmark },
+  { to: "/inspections", label: "Vistorias", icon: ClipboardCheck },
 ];
 
 export function Layout() {

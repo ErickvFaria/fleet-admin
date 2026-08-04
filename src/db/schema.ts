@@ -62,6 +62,8 @@ export const contracts = pgTable("contracts", {
   vehicleId: integer("vehicle_id").notNull().references(() => vehicles.id),
   startDate: date("start_date").notNull(),
   endDate: date("end_date"),
+  paymentDayOfWeek: integer("payment_day_of_week").notNull(),
+  termEndDate: date("term_end_date"),
   weeklyRate: decimal("weekly_rate", { precision: 10, scale: 2 }).notNull(),
   status: varchar("status", { length: 20 }).default("active").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -87,5 +89,26 @@ export const vehicleInsurances = pgTable("vehicle_insurances", {
   dueDay: integer("due_day").notNull(),
   lastPaidAt: date("last_paid_at"),
   status: varchar("status", { length: 20 }).default("active").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const inspections = pgTable("inspections", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  vehicleId: integer("vehicle_id").notNull().references(() => vehicles.id),
+  driverId: integer("driver_id").notNull().references(() => drivers.id),
+  contractId: integer("contract_id").references(() => contracts.id),
+  inspectedAt: timestamp("inspected_at").defaultNow().notNull(),
+  km: integer("km").notNull(),
+  color: varchar("color", { length: 40 }),
+  checklist: text("checklist").notNull(),
+  generalNotes: text("general_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const inspectionPhotos = pgTable("inspection_photos", {
+  id: serial("id").primaryKey(),
+  inspectionId: integer("inspection_id").notNull().references(() => inspections.id),
+  filename: varchar("filename", { length: 255 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

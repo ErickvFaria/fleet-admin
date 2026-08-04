@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { Car, Users, Wallet, TrendingUp, TrendingDown, Landmark } from "lucide-react";
+import { Car, Users, Wallet, TrendingUp, TrendingDown, Landmark, AlertTriangle, CalendarClock } from "lucide-react";
 import { api } from "../api/client";
 
 interface Vehicle {
   id: number;
+  plate: string;
   status: string;
 }
 
 interface Driver {
   id: number;
+  name: string;
   status: string;
 }
 
@@ -27,27 +29,40 @@ interface Financing {
   paidInstallments: number;
 }
 
+interface Contract {
+  id: number;
+  driverId: number;
+  vehicleId: number;
+  paymentDayOfWeek: number;
+  termEndDate: string | null;
+  status: string;
+}
+
 const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+const weekDayNames = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 
 export function Dashboard() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [entries, setEntries] = useState<FinancialEntry[]>([]);
   const [financings, setFinancings] = useState<Financing[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      const [vehiclesRes, driversRes, entriesRes, financingsRes] = await Promise.all([
+      const [vehiclesRes, driversRes, entriesRes, financingsRes, contractsRes] = await Promise.all([
         api.get("/vehicles"),
         api.get("/drivers"),
         api.get("/financial-entries"),
         api.get("/financings"),
+        api.get("/contracts"),
       ]);
       setVehicles(vehiclesRes.data);
       setDrivers(driversRes.data);
       setEntries(entriesRes.data);
       setFinancings(financingsRes.data);
+      setContracts(contractsRes.data);
       setLoading(false);
     }
     load();
@@ -79,6 +94,30 @@ export function Dashboard() {
     0
   );
 
+  // Alertas de contrato
+  const activeContracts = contracts.filter((c) => c.status === "active");
+  const todayWeekDay = new Date().getDay();
+
+  const paymentsToday = activeContracts.filter((c) => c.paymentDayOfWeek === todayWeekDay);
+
+  const expiringContracts = activeContracts
+    .filter((c) => c.termEndDate)
+    .map((c) => {
+      const daysRemaining = Math.ceil(
+        (new Date(c.termEndDate!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+      );
+      return { ...c, daysRemaining };
+    })
+    .filter((c) => c.daysRemaining <= 14);
+
+  function vehiclePlate(id: number) {
+    return vehicles.find((v) => v.id === id)?.plate ?? "-";
+  }
+
+  function driverName(id: number) {
+    return drivers.find((d) => d.id === id)?.name ?? "-";
+  }
+
   const monthlyMap = new Map<string, { in: number; out: number }>();
   for (const entry of entries) {
     const date = new Date(entry.dueAt);
@@ -103,6 +142,35 @@ export function Dashboard() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-900 mb-6">Dashboard</h1>
+
+      {(paymentsToday.length > 0 || expiringContracts.length > 0) && (
+        <div className="mb-6 space-y-2">
+          {paymentsToday.map((c) => (
+            <div key={`payment-${c.id}`} className="flex items-center gap-3 p-4 rounded-xl border bg-indigo-50 border-indigo-200">
+              <CalendarClock size={18} className="text-indigo-600" />
+              <span className="text-sm text-slate-700">
+                Hoje é dia de pagamento de <strong>{driverName(c.driverId)}</strong> ({vehiclePlate(c.vehicleId)}) — dia de {weekDayNames[c.paymentDayOfWeek]}
+              </span>
+            </div>
+          ))}
+          {expiringContracts.map((c) => (
+            <div
+              key={`expiring-${c.id}`}
+              className={`flex items-center gap-3 p-4 rounded-xl border ${
+                c.daysRemaining < 0 ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"
+              }`}
+            >
+              <AlertTriangle size={18} className={c.daysRemaining < 0 ? "text-red-600" : "text-amber-600"} />
+              <span className="text-sm text-slate-700">
+                Contrato de <strong>{driverName(c.driverId)}</strong> ({vehiclePlate(c.vehicleId)}) —{" "}
+                {c.daysRemaining < 0
+                  ? `venceu há ${Math.abs(c.daysRemaining)} dia(s)`
+                  : `vence em ${c.daysRemaining} dia(s)`}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm shadow-slate-200/50">
@@ -156,21 +224,28 @@ export function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
-        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-xl p-5 shadow-lg shadow-indigo-200 text-white lg:col-span-1">
-          <p className="text-sm font-medium text-indigo-100 mb-1">Saldo em caixa</p>
-          <p className="text-3xl font-bold mb-4">R$ {cashBalance.toFixed(2)}</p>
-          <div className="space-y-2 text-sm border-t border-indigo-500 pt-3">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm shadow-slate-200/50 lg:col-span-1">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-sm font-medium text-slate-500">Saldo em caixa</p>
+            <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center">
+              <Wallet size={18} className="text-indigo-600" />
+            </div>
+          </div>
+          <p className={`text-3xl font-bold mb-4 ${cashBalance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+            R$ {cashBalance.toFixed(2)}
+          </p>
+          <div className="space-y-2 text-sm border-t border-slate-100 pt-3">
             <div className="flex justify-between items-center">
-              <span className="flex items-center gap-1.5 text-indigo-100"><TrendingUp size={14} /> Recebido</span>
-              <span className="font-medium">R$ {totalIn.toFixed(2)}</span>
+              <span className="flex items-center gap-1.5 text-slate-500"><TrendingUp size={14} className="text-emerald-600" /> Recebido</span>
+              <span className="font-medium text-emerald-600">R$ {totalIn.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="flex items-center gap-1.5 text-indigo-100"><TrendingDown size={14} /> Pago</span>
-              <span className="font-medium">R$ {totalOut.toFixed(2)}</span>
+              <span className="flex items-center gap-1.5 text-slate-500"><TrendingDown size={14} className="text-red-600" /> Pago</span>
+              <span className="font-medium text-red-600">R$ {totalOut.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="flex items-center gap-1.5 text-indigo-100"><Wallet size={14} /> Pendente</span>
-              <span className="font-medium">R$ {totalPending.toFixed(2)}</span>
+              <span className="flex items-center gap-1.5 text-slate-500"><Wallet size={14} className="text-amber-600" /> Pendente</span>
+              <span className="font-medium text-amber-600">R$ {totalPending.toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -186,8 +261,8 @@ export function Dashboard() {
                 contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
               />
               <Legend />
-              <Bar dataKey="Entradas" fill="#4f46e5" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="Saídas" fill="#f43f5e" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="Entradas" fill="#16a34a" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="Saídas" fill="#dc2626" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

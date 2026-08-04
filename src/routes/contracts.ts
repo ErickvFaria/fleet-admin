@@ -20,11 +20,11 @@ contractsRouter.get("/:id", async (req, res) => {
 
 contractsRouter.post("/", async (req, res) => {
   const companyId = req.auth!.companyId;
-  const { driverId, vehicleId, startDate, weeklyRate } = req.body;
+  const { driverId, vehicleId, startDate, weeklyRate, paymentDayOfWeek, termEndDate } = req.body;
 
   const [created] = await db
     .insert(contracts)
-    .values({ companyId, driverId, vehicleId, startDate, weeklyRate })
+    .values({ companyId, driverId, vehicleId, startDate, weeklyRate, paymentDayOfWeek, termEndDate: termEndDate || null })
     .returning();
 
   await db.update(vehicles).set({ status: "rented" }).where(eq(vehicles.id, vehicleId));

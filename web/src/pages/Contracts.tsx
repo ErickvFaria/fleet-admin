@@ -8,6 +8,8 @@ interface Contract {
   vehicleId: number;
   startDate: string;
   endDate: string | null;
+  termEndDate: string | null;
+  paymentDayOfWeek: number;
   weeklyRate: string;
   status: string;
 }
@@ -24,6 +26,16 @@ interface Vehicle {
   status: string;
 }
 
+const weekDays = [
+  { value: 0, label: "Domingo" },
+  { value: 1, label: "Segunda" },
+  { value: 2, label: "Terça" },
+  { value: 3, label: "Quarta" },
+  { value: 4, label: "Quinta" },
+  { value: 5, label: "Sexta" },
+  { value: 6, label: "Sábado" },
+];
+
 export function Contracts() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -32,6 +44,8 @@ export function Contracts() {
   const [driverId, setDriverId] = useState("");
   const [vehicleId, setVehicleId] = useState("");
   const [startDate, setStartDate] = useState("");
+  const [termEndDate, setTermEndDate] = useState("");
+  const [paymentDayOfWeek, setPaymentDayOfWeek] = useState("1");
   const [weeklyRate, setWeeklyRate] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -57,11 +71,15 @@ export function Contracts() {
       driverId: Number(driverId),
       vehicleId: Number(vehicleId),
       startDate,
+      termEndDate: termEndDate || null,
+      paymentDayOfWeek: Number(paymentDayOfWeek),
       weeklyRate,
     });
     setDriverId("");
     setVehicleId("");
     setStartDate("");
+    setTermEndDate("");
+    setPaymentDayOfWeek("1");
     setWeeklyRate("");
     loadData();
   }
@@ -83,6 +101,10 @@ export function Contracts() {
 
   function vehiclePlate(id: number) {
     return vehicles.find((v) => v.id === id)?.plate ?? "-";
+  }
+
+  function weekDayLabel(value: number) {
+    return weekDays.find((d) => d.value === value)?.label ?? "-";
   }
 
   const availableVehicles = vehicles.filter((v) => v.status === "available");
@@ -107,17 +129,34 @@ export function Contracts() {
             <option key={v.id} value={v.id}>{v.plate}</option>
           ))}
         </select>
-        <input className={inputClass} type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
-        <input
-          className={inputClass + " w-32"}
-          placeholder="Valor semanal"
-          type="number"
-          step="0.01"
-          value={weeklyRate}
-          onChange={(e) => setWeeklyRate(e.target.value)}
-          required
-        />
-        <button type="submit" className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-slate-500">Início</label>
+          <input className={inputClass} type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-slate-500">Término previsto</label>
+          <input className={inputClass} type="date" value={termEndDate} onChange={(e) => setTermEndDate(e.target.value)} />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-slate-500">Dia de pagamento</label>
+          <select className={inputClass} value={paymentDayOfWeek} onChange={(e) => setPaymentDayOfWeek(e.target.value)} required>
+            {weekDays.map((d) => (
+              <option key={d.value} value={d.value}>{d.label}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-slate-500">Valor semanal</label>
+          <input
+            className={inputClass + " w-32"}
+            type="number"
+            step="0.01"
+            value={weeklyRate}
+            onChange={(e) => setWeeklyRate(e.target.value)}
+            required
+          />
+        </div>
+        <button type="submit" className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200 self-end">
           <Plus size={16} />
           Criar contrato
         </button>
@@ -130,7 +169,8 @@ export function Contracts() {
               <th className="px-4 py-3 font-medium">Motorista</th>
               <th className="px-4 py-3 font-medium">Veículo</th>
               <th className="px-4 py-3 font-medium">Início</th>
-              <th className="px-4 py-3 font-medium">Fim</th>
+              <th className="px-4 py-3 font-medium">Término previsto</th>
+              <th className="px-4 py-3 font-medium">Pagamento</th>
               <th className="px-4 py-3 font-medium">Valor semanal</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3"></th>
@@ -142,7 +182,8 @@ export function Contracts() {
                 <td className="px-4 py-3 font-medium text-slate-900">{driverName(c.driverId)}</td>
                 <td className="px-4 py-3 text-slate-600">{vehiclePlate(c.vehicleId)}</td>
                 <td className="px-4 py-3 text-slate-600">{c.startDate}</td>
-                <td className="px-4 py-3 text-slate-600">{c.endDate ?? "-"}</td>
+                <td className="px-4 py-3 text-slate-600">{c.termEndDate ?? "-"}</td>
+                <td className="px-4 py-3 text-slate-600">{weekDayLabel(c.paymentDayOfWeek)}</td>
                 <td className="px-4 py-3 text-slate-600">R$ {c.weeklyRate}</td>
                 <td className="px-4 py-3">
                   <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
