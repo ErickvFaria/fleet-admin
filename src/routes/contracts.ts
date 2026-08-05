@@ -33,6 +33,20 @@ contractsRouter.post("/", async (req, res) => {
   res.status(201).json(created);
 });
 
+contractsRouter.put("/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const { startDate, termEndDate, paymentDayOfWeek, weeklyRate } = req.body;
+
+  const [updated] = await db
+    .update(contracts)
+    .set({ startDate, termEndDate: termEndDate || null, paymentDayOfWeek, weeklyRate })
+    .where(eq(contracts.id, id))
+    .returning();
+
+  if (!updated) return res.status(404).json({ error: "Contrato não encontrado" });
+  res.json(updated);
+});
+
 contractsRouter.put("/:id/finish", async (req, res) => {
   const id = Number(req.params.id);
   const { endDate } = req.body;

@@ -1,5 +1,5 @@
 import { useEffect, useState, FormEvent } from "react";
-import { Plus, Trash2, CheckCircle2 } from "lucide-react";
+import { Plus, Pencil, Trash2, CheckCircle2, X } from "lucide-react";
 import { api } from "../api/client";
 
 interface Contract {
@@ -47,6 +47,7 @@ export function Contracts() {
   const [termEndDate, setTermEndDate] = useState("");
   const [paymentDayOfWeek, setPaymentDayOfWeek] = useState("1");
   const [weeklyRate, setWeeklyRate] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   async function loadData() {
@@ -65,22 +66,48 @@ export function Contracts() {
     loadData();
   }, []);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    await api.post("/contracts", {
-      driverId: Number(driverId),
-      vehicleId: Number(vehicleId),
-      startDate,
-      termEndDate: termEndDate || null,
-      paymentDayOfWeek: Number(paymentDayOfWeek),
-      weeklyRate,
-    });
+  function resetForm() {
     setDriverId("");
     setVehicleId("");
     setStartDate("");
     setTermEndDate("");
     setPaymentDayOfWeek("1");
     setWeeklyRate("");
+    setEditingId(null);
+  }
+
+  function startEdit(contract: Contract) {
+    setEditingId(contract.id);
+    setDriverId(String(contract.driverId));
+    setVehicleId(String(contract.vehicleId));
+    setStartDate(contract.startDate);
+    setTermEndDate(contract.termEndDate ?? "");
+    setPaymentDayOfWeek(String(contract.paymentDayOfWeek));
+    setWeeklyRate(contract.weeklyRate);
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+
+    if (editingId) {
+      await api.put(`/contracts/${editingId}`, {
+        startDate,
+        termEndDate: termEndDate || null,
+        paymentDayOfWeek: Number(paymentDayOfWeek),
+        weeklyRate,
+      });
+    } else {
+      await api.post("/contracts", {
+        driverId: Number(driverId),
+        vehicleId: Number(vehicleId),
+        startDate,
+        termEndDate: termEndDate || null,
+        paymentDayOfWeek: Number(paymentDayOfWeek),
+        weeklyRate,
+      });
+    }
+
+    resetForm();
     loadData();
   }
 
@@ -92,6 +119,7 @@ export function Contracts() {
 
   async function handleDelete(id: number) {
     await api.delete(`/contracts/${id}`);
+    if (editingId === id) resetForm();
     loadData();
   }
 
@@ -116,19 +144,29 @@ export function Contracts() {
     <div>
       <h1 className="text-2xl font-bold text-slate-900 mb-6">Contratos</h1>
 
-      <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-xl p-4 mb-6 flex gap-3 flex-wrap items-center shadow-sm shadow-slate-200/50">
-        <select className={inputClass} value={driverId} onChange={(e) => setDriverId(e.target.value)} required>
-          <option value="">Selecione o motorista</option>
-          {drivers.map((d) => (
-            <option key={d.id} value={d.id}>{d.name}</option>
-          ))}
-        </select>
-        <select className={inputClass} value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} required>
-          <option value="">Selecione o veículo</option>
-          {availableVehicles.map((v) => (
-            <option key={v.id} value={v.id}>{v.plate}</option>
-          ))}
-        </select>
+      <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-xl p-4 mb-6 flex gap-3 flex-wrap items-end shadow-sm shadow-slate-200/50">
+        {!editingId && (
+          <>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-500">Motorista</label>
+              <select className={inputClass} value={driverId} onChange={(e) => setDriverId(e.target.value)} required>
+                <option value="">Selecione</option>
+                {drivers.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-500">Veículo</label>
+              <select className={inputClass} value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} required>
+                <option value="">Selecione</option>
+                {availableVehicles.map((v) => (
+                  <option key={v.id} value={v.id}>{v.plate}</option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
         <div className="flex flex-col gap-1">
           <label className="text-xs text-slate-500">Início</label>
           <input className={inputClass} type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
@@ -156,10 +194,16 @@ export function Contracts() {
             required
           />
         </div>
-        <button type="submit" className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200 self-end">
-          <Plus size={16} />
-          Criar contrato
+        <button type="submit" className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200">
+          {editingId ? <Pencil size={16} /> : <Plus size={16} />}
+          {editingId ? "Salvar" : "Criar contrato"}
         </button>
+        {editingId && (
+          <button type="button" onClick={resetForm} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
+            <X size={16} />
+            Cancelar
+          </button>
+        )}
       </form>
 
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm shadow-slate-200/50">
@@ -195,9 +239,14 @@ export function Contracts() {
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-3">
                     {c.status === "active" && (
-                      <button onClick={() => handleFinish(c.id)} className="text-slate-400 hover:text-indigo-600 transition-colors" title="Encerrar">
-                        <CheckCircle2 size={16} />
-                      </button>
+                      <>
+                        <button onClick={() => startEdit(c)} className="text-slate-400 hover:text-indigo-600 transition-colors" title="Editar">
+                          <Pencil size={16} />
+                        </button>
+                        <button onClick={() => handleFinish(c.id)} className="text-slate-400 hover:text-indigo-600 transition-colors" title="Encerrar">
+                          <CheckCircle2 size={16} />
+                        </button>
+                      </>
                     )}
                     <button onClick={() => handleDelete(c.id)} className="text-slate-400 hover:text-red-600 transition-colors" title="Excluir">
                       <Trash2 size={16} />
