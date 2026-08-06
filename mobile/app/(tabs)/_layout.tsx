@@ -25,6 +25,20 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline" color={color} size={size} />,
         }}
       />
+      <Tabs.Screen
+        name="financings"
+        options={{
+          title: "Financ.",
+          tabBarIcon: ({ color, size }) => <Ionicons name="business-outline" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="inspections"
+        options={{
+          title: "Vistorias",
+          tabBarIcon: ({ color, size }) => <Ionicons name="clipboard-outline" color={color} size={size} />,
+        }}
+      />
     </Tabs>
   );
 }
