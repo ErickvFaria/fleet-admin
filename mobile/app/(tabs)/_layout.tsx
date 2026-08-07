@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 export default function TabsLayout() {
   return (
-    <Tabs screenOptions={{ headerShown: true, tabBarActiveTintColor: "#4f46e5" }}>
+    <Tabs screenOptions={{ headerShown: true, tabBarActiveTintColor: "#4f46e5", tabBarLabelStyle: { fontSize: 10 } }}>
       <Tabs.Screen
         name="index"
         options={{
@@ -19,16 +19,30 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="drivers"
+        options={{
+          title: "Motoristas",
+          tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="contracts"
+        options={{
+          title: "Contratos",
+          tabBarIcon: ({ color, size }) => <Ionicons name="document-text-outline" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
         name="financial"
         options={{
-          title: "Financeiro",
+          title: "Financ.",
           tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="financings"
         options={{
-          title: "Financ.",
+          title: "Financiam.",
           tabBarIcon: ({ color, size }) => <Ionicons name="business-outline" color={color} size={size} />,
         }}
       />

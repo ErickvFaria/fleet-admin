@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "../db/client";
 import { contracts, drivers, vehicles } from "../db/schema";
 
@@ -12,8 +12,12 @@ contractsRouter.get("/", async (req, res) => {
 });
 
 contractsRouter.get("/:id", async (req, res) => {
+  const companyId = req.auth!.companyId;
   const id = Number(req.params.id);
-  const [result] = await db.select().from(contracts).where(eq(contracts.id, id));
+  const [result] = await db
+    .select()
+    .from(contracts)
+    .where(and(eq(contracts.id, id), eq(contracts.companyId, companyId)));
   if (!result) return res.status(404).json({ error: "Contrato não encontrado" });
   res.json(result);
 });
@@ -27,20 +31,21 @@ contractsRouter.post("/", async (req, res) => {
     .values({ companyId, driverId, vehicleId, startDate, weeklyRate, paymentDayOfWeek, termEndDate: termEndDate || null })
     .returning();
 
-  await db.update(vehicles).set({ status: "rented" }).where(eq(vehicles.id, vehicleId));
-  await db.update(drivers).set({ currentVehicleId: vehicleId }).where(eq(drivers.id, driverId));
+  await db.update(vehicles).set({ status: "rented" }).where(and(eq(vehicles.id, vehicleId), eq(vehicles.companyId, companyId)));
+  await db.update(drivers).set({ currentVehicleId: vehicleId }).where(and(eq(drivers.id, driverId), eq(drivers.companyId, companyId)));
 
   res.status(201).json(created);
 });
 
 contractsRouter.put("/:id", async (req, res) => {
+  const companyId = req.auth!.companyId;
   const id = Number(req.params.id);
   const { startDate, termEndDate, paymentDayOfWeek, weeklyRate } = req.body;
 
   const [updated] = await db
     .update(contracts)
     .set({ startDate, termEndDate: termEndDate || null, paymentDayOfWeek, weeklyRate })
-    .where(eq(contracts.id, id))
+    .where(and(eq(contracts.id, id), eq(contracts.companyId, companyId)))
     .returning();
 
   if (!updated) return res.status(404).json({ error: "Contrato não encontrado" });
@@ -48,27 +53,35 @@ contractsRouter.put("/:id", async (req, res) => {
 });
 
 contractsRouter.put("/:id/finish", async (req, res) => {
+  const companyId = req.auth!.companyId;
   const id = Number(req.params.id);
   const { endDate } = req.body;
 
-  const [contract] = await db.select().from(contracts).where(eq(contracts.id, id));
+  const [contract] = await db
+    .select()
+    .from(contracts)
+    .where(and(eq(contracts.id, id), eq(contracts.companyId, companyId)));
   if (!contract) return res.status(404).json({ error: "Contrato não encontrado" });
 
   const [updated] = await db
     .update(contracts)
     .set({ status: "finished", endDate })
-    .where(eq(contracts.id, id))
+    .where(and(eq(contracts.id, id), eq(contracts.companyId, companyId)))
     .returning();
 
-  await db.update(vehicles).set({ status: "available" }).where(eq(vehicles.id, contract.vehicleId));
-  await db.update(drivers).set({ currentVehicleId: null }).where(eq(drivers.id, contract.driverId));
+  await db.update(vehicles).set({ status: "available" }).where(and(eq(vehicles.id, contract.vehicleId), eq(vehicles.companyId, companyId)));
+  await db.update(drivers).set({ currentVehicleId: null }).where(and(eq(drivers.id, contract.driverId), eq(drivers.companyId, companyId)));
 
   res.json(updated);
 });
 
 contractsRouter.delete("/:id", async (req, res) => {
+  const companyId = req.auth!.companyId;
   const id = Number(req.params.id);
-  const [deleted] = await db.delete(contracts).where(eq(contracts.id, id)).returning();
+  const [deleted] = await db
+    .delete(contracts)
+    .where(and(eq(contracts.id, id), eq(contracts.companyId, companyId)))
+    .returning();
   if (!deleted) return res.status(404).json({ error: "Contrato não encontrado" });
   res.json({ ok: true });
 });

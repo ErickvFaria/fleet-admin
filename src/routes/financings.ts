@@ -1,18 +1,16 @@
 import { Router } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "../db/client";
 import { vehicleFinancings, financialEntries } from "../db/schema";
 
 export const financingsRouter = Router();
 
-// Listar financiamentos da empresa
 financingsRouter.get("/", async (req, res) => {
   const companyId = req.auth!.companyId;
   const result = await db.select().from(vehicleFinancings).where(eq(vehicleFinancings.companyId, companyId));
   res.json(result);
 });
 
-// Criar financiamento
 financingsRouter.post("/", async (req, res) => {
   const companyId = req.auth!.companyId;
   const { vehicleId, installmentValue, dueDay, totalInstallments } = req.body;
@@ -25,13 +23,15 @@ financingsRouter.post("/", async (req, res) => {
   res.status(201).json(created);
 });
 
-// Marcar parcela como paga (valor customizável, útil pra amortização com desconto de juros)
 financingsRouter.put("/:id/pay-installment", async (req, res) => {
-  const id = Number(req.params.id);
   const companyId = req.auth!.companyId;
+  const id = Number(req.params.id);
   const { amount } = req.body;
 
-  const [financing] = await db.select().from(vehicleFinancings).where(eq(vehicleFinancings.id, id));
+  const [financing] = await db
+    .select()
+    .from(vehicleFinancings)
+    .where(and(eq(vehicleFinancings.id, id), eq(vehicleFinancings.companyId, companyId)));
   if (!financing) return res.status(404).json({ error: "Financiamento não encontrado" });
 
   const paidAmount = amount ? String(amount) : financing.installmentValue;
@@ -41,7 +41,7 @@ financingsRouter.put("/:id/pay-installment", async (req, res) => {
   const [updated] = await db
     .update(vehicleFinancings)
     .set({ paidInstallments: newPaidCount, status: newStatus })
-    .where(eq(vehicleFinancings.id, id))
+    .where(and(eq(vehicleFinancings.id, id), eq(vehicleFinancings.companyId, companyId)))
     .returning();
 
   const today = new Date().toISOString().slice(0, 10);
@@ -60,10 +60,13 @@ financingsRouter.put("/:id/pay-installment", async (req, res) => {
   res.json(updated);
 });
 
-// Deletar financiamento
 financingsRouter.delete("/:id", async (req, res) => {
+  const companyId = req.auth!.companyId;
   const id = Number(req.params.id);
-  const [deleted] = await db.delete(vehicleFinancings).where(eq(vehicleFinancings.id, id)).returning();
+  const [deleted] = await db
+    .delete(vehicleFinancings)
+    .where(and(eq(vehicleFinancings.id, id), eq(vehicleFinancings.companyId, companyId)))
+    .returning();
   if (!deleted) return res.status(404).json({ error: "Financiamento não encontrado" });
   res.json({ ok: true });
 });

@@ -16,7 +16,6 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Listar vistorias (opcionalmente filtradas por veículo)
 inspectionsRouter.get("/", async (req, res) => {
   const companyId = req.auth!.companyId;
   const vehicleId = req.query.vehicleId ? Number(req.query.vehicleId) : undefined;
@@ -37,7 +36,6 @@ inspectionsRouter.get("/", async (req, res) => {
   res.json(withPhotos);
 });
 
-// Criar vistoria (com upload de até 10 fotos)
 inspectionsRouter.post("/", upload.array("photos", 10), async (req, res) => {
   const companyId = req.auth!.companyId;
   const { vehicleId, driverId, contractId, km, color, checklist, generalNotes } = req.body;
@@ -64,7 +62,6 @@ inspectionsRouter.post("/", upload.array("photos", 10), async (req, res) => {
   res.status(201).json(created);
 });
 
-// Calcula quais contratos ativos estão com vistoria pendente/atrasada (ciclo de 7 dias)
 inspectionsRouter.get("/alerts", async (req, res) => {
   const companyId = req.auth!.companyId;
 
@@ -78,7 +75,7 @@ inspectionsRouter.get("/alerts", async (req, res) => {
     const lastInspections = await db
       .select()
       .from(inspections)
-      .where(eq(inspections.contractId, contract.id))
+      .where(and(eq(inspections.contractId, contract.id), eq(inspections.companyId, companyId)))
       .orderBy(desc(inspections.inspectedAt))
       .limit(1);
 
@@ -90,8 +87,14 @@ inspectionsRouter.get("/alerts", async (req, res) => {
     const diffDays = Math.ceil((nextDueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
     if (diffDays <= 1) {
-      const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, contract.vehicleId));
-      const [driver] = await db.select().from(drivers).where(eq(drivers.id, contract.driverId));
+      const [vehicle] = await db
+        .select()
+        .from(vehicles)
+        .where(and(eq(vehicles.id, contract.vehicleId), eq(vehicles.companyId, companyId)));
+      const [driver] = await db
+        .select()
+        .from(drivers)
+        .where(and(eq(drivers.id, contract.driverId), eq(drivers.companyId, companyId)));
 
       alerts.push({
         contractId: contract.id,

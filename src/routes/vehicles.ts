@@ -1,26 +1,27 @@
 import { Router } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "../db/client";
 import { vehicles } from "../db/schema";
 
 export const vehiclesRouter = Router();
 
-// Listar veículos da empresa do usuário logado
 vehiclesRouter.get("/", async (req, res) => {
   const companyId = req.auth!.companyId;
   const result = await db.select().from(vehicles).where(eq(vehicles.companyId, companyId));
   res.json(result);
 });
 
-// Buscar um veículo específico
 vehiclesRouter.get("/:id", async (req, res) => {
+  const companyId = req.auth!.companyId;
   const id = Number(req.params.id);
-  const [result] = await db.select().from(vehicles).where(eq(vehicles.id, id));
+  const [result] = await db
+    .select()
+    .from(vehicles)
+    .where(and(eq(vehicles.id, id), eq(vehicles.companyId, companyId)));
   if (!result) return res.status(404).json({ error: "Veículo não encontrado" });
   res.json(result);
 });
 
-// Criar veículo
 vehiclesRouter.post("/", async (req, res) => {
   const companyId = req.auth!.companyId;
   const { plate, brand, model, year, currentKm } = req.body;
@@ -31,23 +32,26 @@ vehiclesRouter.post("/", async (req, res) => {
   res.status(201).json(created);
 });
 
-// Atualizar veículo
 vehiclesRouter.put("/:id", async (req, res) => {
+  const companyId = req.auth!.companyId;
   const id = Number(req.params.id);
   const { plate, brand, model, year, currentKm, status } = req.body;
   const [updated] = await db
     .update(vehicles)
     .set({ plate, brand, model, year, currentKm, status })
-    .where(eq(vehicles.id, id))
+    .where(and(eq(vehicles.id, id), eq(vehicles.companyId, companyId)))
     .returning();
   if (!updated) return res.status(404).json({ error: "Veículo não encontrado" });
   res.json(updated);
 });
 
-// Deletar veículo
 vehiclesRouter.delete("/:id", async (req, res) => {
+  const companyId = req.auth!.companyId;
   const id = Number(req.params.id);
-  const [deleted] = await db.delete(vehicles).where(eq(vehicles.id, id)).returning();
+  const [deleted] = await db
+    .delete(vehicles)
+    .where(and(eq(vehicles.id, id), eq(vehicles.companyId, companyId)))
+    .returning();
   if (!deleted) return res.status(404).json({ error: "Veículo não encontrado" });
   res.json({ ok: true });
 });

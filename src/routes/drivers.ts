@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "../db/client";
 import { drivers } from "../db/schema";
 
@@ -12,8 +12,12 @@ driversRouter.get("/", async (req, res) => {
 });
 
 driversRouter.get("/:id", async (req, res) => {
+  const companyId = req.auth!.companyId;
   const id = Number(req.params.id);
-  const [result] = await db.select().from(drivers).where(eq(drivers.id, id));
+  const [result] = await db
+    .select()
+    .from(drivers)
+    .where(and(eq(drivers.id, id), eq(drivers.companyId, companyId)));
   if (!result) return res.status(404).json({ error: "Motorista não encontrado" });
   res.json(result);
 });
@@ -29,20 +33,25 @@ driversRouter.post("/", async (req, res) => {
 });
 
 driversRouter.put("/:id", async (req, res) => {
+  const companyId = req.auth!.companyId;
   const id = Number(req.params.id);
   const { currentVehicleId, name, document, licenseNumber, licenseExpiresAt, status } = req.body;
   const [updated] = await db
     .update(drivers)
     .set({ currentVehicleId, name, document, licenseNumber, licenseExpiresAt, status })
-    .where(eq(drivers.id, id))
+    .where(and(eq(drivers.id, id), eq(drivers.companyId, companyId)))
     .returning();
   if (!updated) return res.status(404).json({ error: "Motorista não encontrado" });
   res.json(updated);
 });
 
 driversRouter.delete("/:id", async (req, res) => {
+  const companyId = req.auth!.companyId;
   const id = Number(req.params.id);
-  const [deleted] = await db.delete(drivers).where(eq(drivers.id, id)).returning();
+  const [deleted] = await db
+    .delete(drivers)
+    .where(and(eq(drivers.id, id), eq(drivers.companyId, companyId)))
+    .returning();
   if (!deleted) return res.status(404).json({ error: "Motorista não encontrado" });
   res.json({ ok: true });
 });

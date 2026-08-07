@@ -1,18 +1,16 @@
 import { Router } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "../db/client";
 import { vehicleInsurances, financialEntries } from "../db/schema";
 
 export const insurancesRouter = Router();
 
-// Listar seguros da empresa
 insurancesRouter.get("/", async (req, res) => {
   const companyId = req.auth!.companyId;
   const result = await db.select().from(vehicleInsurances).where(eq(vehicleInsurances.companyId, companyId));
   res.json(result);
 });
 
-// Criar seguro
 insurancesRouter.post("/", async (req, res) => {
   const companyId = req.auth!.companyId;
   const { vehicleId, monthlyValue, dueDay } = req.body;
@@ -25,12 +23,14 @@ insurancesRouter.post("/", async (req, res) => {
   res.status(201).json(created);
 });
 
-// Registrar pagamento do mês
 insurancesRouter.put("/:id/pay-month", async (req, res) => {
-  const id = Number(req.params.id);
   const companyId = req.auth!.companyId;
+  const id = Number(req.params.id);
 
-  const [insurance] = await db.select().from(vehicleInsurances).where(eq(vehicleInsurances.id, id));
+  const [insurance] = await db
+    .select()
+    .from(vehicleInsurances)
+    .where(and(eq(vehicleInsurances.id, id), eq(vehicleInsurances.companyId, companyId)));
   if (!insurance) return res.status(404).json({ error: "Seguro não encontrado" });
 
   const today = new Date().toISOString().slice(0, 10);
@@ -38,7 +38,7 @@ insurancesRouter.put("/:id/pay-month", async (req, res) => {
   const [updated] = await db
     .update(vehicleInsurances)
     .set({ lastPaidAt: today })
-    .where(eq(vehicleInsurances.id, id))
+    .where(and(eq(vehicleInsurances.id, id), eq(vehicleInsurances.companyId, companyId)))
     .returning();
 
   await db.insert(financialEntries).values({
@@ -56,10 +56,13 @@ insurancesRouter.put("/:id/pay-month", async (req, res) => {
   res.json(updated);
 });
 
-// Deletar seguro
 insurancesRouter.delete("/:id", async (req, res) => {
+  const companyId = req.auth!.companyId;
   const id = Number(req.params.id);
-  const [deleted] = await db.delete(vehicleInsurances).where(eq(vehicleInsurances.id, id)).returning();
+  const [deleted] = await db
+    .delete(vehicleInsurances)
+    .where(and(eq(vehicleInsurances.id, id), eq(vehicleInsurances.companyId, companyId)))
+    .returning();
   if (!deleted) return res.status(404).json({ error: "Seguro não encontrado" });
   res.json({ ok: true });
 });
